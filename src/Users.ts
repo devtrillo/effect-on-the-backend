@@ -1,11 +1,7 @@
 import { Context, Data, Effect, Layer } from "effect"
-import type { NewUser } from "./User.ts"
+import type { NewUser, User } from "./User.ts"
 
-export interface User {
-  readonly id: string
-  readonly name: string
-  readonly email?: string
-}
+export type { User }
 
 export class UserNotFound extends Data.TaggedError("UserNotFound")<{
   readonly id: string

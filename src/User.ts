@@ -14,3 +14,10 @@ export const NewUser = Schema.Struct({
   ),
 })
 export type NewUser = typeof NewUser.Type
+
+export const User = Schema.Struct({
+  id: Schema.String,
+  name: Schema.String,
+  email: Schema.optionalKey(Schema.String),
+}).annotate({ identifier: "User" })
+export type User = typeof User.Type
