@@ -1,10 +1,11 @@
-import { Effect } from "effect"
+import { Cause, Effect, Exit } from "effect"
+import { getUser } from "./getUser.ts"
 import { Users } from "./Users.ts"
 
-const program = Effect.gen(function* () {
-  const users = yield* Users
-  const user = yield* users.find("1")
-  console.log(`found ${user.name}`)
-})
-
-Effect.runPromise(program.pipe(Effect.provide(Users.layer)))
+for (const id of ["1", "2"]) {
+  const exit = await Effect.runPromiseExit(
+    getUser(id).pipe(Effect.provide(Users.layer)),
+  )
+  if (Exit.isSuccess(exit)) console.log(`found ${exit.value.name}`)
+  else console.log(Cause.pretty(exit.cause))
+}
