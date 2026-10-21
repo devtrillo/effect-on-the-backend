@@ -1,4 +1,5 @@
 import { Context, Effect, Layer, Schema } from "effect"
+import { Ids } from "./Ids.ts"
 import type { NewUser, User } from "./User.ts"
 
 export type { User }
@@ -13,8 +14,10 @@ export class UserNotFound extends Schema.TaggedError<UserNotFound>()(
   }
 }
 
-const make = Effect.sync(() => {
-  const rows = new Map<string, User>([["1", { id: "1", name: "Ada" }]])
+const make = Effect.gen(function* () {
+  const ids = yield* Ids
+  const ada = yield* ids.next
+  const rows = new Map<string, User>([[ada, { id: ada, name: "Ada" }]])
   return {
     find: Effect.fn("Users.find", { attributes: { "db.system": "memory" } })(
       function* (id: string) {
@@ -26,7 +29,7 @@ const make = Effect.sync(() => {
     ),
     create: Effect.fn("Users.create", { attributes: { "db.system": "memory" } })(
       function* (input: NewUser) {
-        const user: User = { id: String(rows.size + 1), ...input }
+        const user: User = { id: yield* ids.next, ...input }
         rows.set(user.id, user)
         yield* Effect.annotateCurrentSpan("user.id", user.id)
         return user
@@ -36,5 +39,5 @@ const make = Effect.sync(() => {
 })
 
 export class Users extends Context.Service<Users>()("Users", { make }) {
-  static readonly layer = Layer.effect(this, this.make)
+  static readonly layer = Layer.effect(this, this.make).pipe(Layer.provide(Ids.layer))
 }

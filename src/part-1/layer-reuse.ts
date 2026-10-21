@@ -1,11 +1,12 @@
 // Run with: node src/part-1/layer-reuse.ts
 import { Effect, Layer } from "effect"
+import { Ids } from "../Ids.ts"
 import { Users } from "../Users.ts"
 
 const layer = Layer.effect(
   Users,
   Users.make.pipe(Effect.tap(() => Effect.sync(() => console.log("building Users")))),
-)
+).pipe(Layer.provide(Ids.layer))
 
 const program = Effect.gen(function* () {
   const users = yield* Users
