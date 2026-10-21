@@ -1,5 +1,5 @@
 import { NodeHttpServer, NodeRuntime } from "@effect/platform-node"
-import { Effect, Layer, SchemaIssue } from "effect"
+import { Config, Effect, Layer, SchemaIssue } from "effect"
 import { HttpRouter, HttpServerResponse } from "effect/http"
 import { HttpApiBuilder, HttpApiMiddleware, HttpApiScalar } from "effect/http-api"
 import { createServer } from "node:http"
@@ -30,9 +30,17 @@ const ApiRoutes = HttpApiBuilder.layer(Api, { openapiPath: "/openapi.json" }).pi
   Layer.provide(ValidationLive),
 )
 
+const port = Config.Port("PORT").pipe(Config.withDefault(3000))
+const databaseUrl = Config.Redacted("DATABASE_URL")
+
+const LogConfig = Layer.effectDiscard(
+  Effect.flatMap(Config.all({ port, databaseUrl }), (config) => Effect.log("Config", config)),
+)
+
 const Server = HttpRouter.serve(Layer.mergeAll(Health, ApiRoutes, HttpApiScalar.layer(Api))).pipe(
   Layer.provide(Users.layer),
-  Layer.provide(NodeHttpServer.layer(createServer, { port: 3000 })),
+  Layer.provide(NodeHttpServer.layerConfig(createServer, { port })),
+  Layer.provide(LogConfig),
 )
 
 Layer.launch(Server).pipe(NodeRuntime.runMain)

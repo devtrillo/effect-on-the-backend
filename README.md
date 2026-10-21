@@ -7,6 +7,7 @@ Each part of the series is a tag (`part-1`, `part-2`, …), so you can check out
 ```sh
 npm install
 npm run check
+cp .env.example .env
 npm start
 ```
 
