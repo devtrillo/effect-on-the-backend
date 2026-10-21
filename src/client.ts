@@ -10,7 +10,10 @@ const program = Effect.gen(function* () {
     payload: { name: "Grace", email: "grace@example.com" },
   })
   const found = yield* client.users.get({ params: { id: UserId.make(created.id) } })
-  console.log({ created, found })
+  const missing = yield* client.users
+    .get({ params: { id: UserId.make("999") } })
+    .pipe(Effect.catchTag("UserNotFound", (error) => Effect.succeed(error.message)))
+  console.log({ created, found, missing })
   yield* client.users.create({ payload: { name: "", email: "nobody@example.com" } })
 })
 

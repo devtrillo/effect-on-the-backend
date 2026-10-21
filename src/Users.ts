@@ -1,11 +1,13 @@
-import { Context, Data, Effect, Layer } from "effect"
+import { Context, Effect, Layer, Schema } from "effect"
 import type { NewUser, User } from "./User.ts"
 
 export type { User }
 
-export class UserNotFound extends Data.TaggedError("UserNotFound")<{
-  readonly id: string
-}> {
+export class UserNotFound extends Schema.TaggedError<UserNotFound>()(
+  "UserNotFound",
+  { id: Schema.String },
+  { httpApiStatus: 404 },
+) {
   override get message() {
     return `user ${this.id} not found`
   }

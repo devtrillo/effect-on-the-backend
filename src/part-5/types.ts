@@ -28,10 +28,5 @@ export const Calls = Effect.gen(function* () {
   yield* client.users.remove({})
 })
 
-// Fail with an error the contract doesn't declare (main.ts uses Effect.orDie).
-export const Undeclared = HttpApiBuilder.group(Api, "users", (handlers) =>
-  handlers
-    // @ts-expect-error Type 'UserNotFound' is not assignable to type 'never'
-    .handle("get", ({ params }) => getUser(params.id))
-    .handle("create", ({ payload }) => Users.use((users) => users.create(payload))),
-)
+// The undeclared-error check lived here until part 6 declared UserNotFound on
+// `get`. It's in src/part-6/types.ts now, against `create`.
