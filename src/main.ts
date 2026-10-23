@@ -1,49 +1,19 @@
 import { NodeHttpServer, NodeRuntime } from "@effect/platform-node"
-import { Config, Effect, Layer, SchemaIssue } from "effect"
+import { Config, Effect, Layer } from "effect"
 import { HttpRouter, HttpServerResponse } from "effect/http"
-import { HttpApiBuilder, HttpApiMiddleware, HttpApiScalar } from "effect/http-api"
+import { HttpApiBuilder, HttpApiScalar } from "effect/http-api"
 import { createServer } from "node:http"
-import { Api, BadRequest, Validation } from "./Api.ts"
-import { Authorization, CurrentUser } from "./Auth.ts"
+import { Api } from "./Api.ts"
+import { AuthorizationLive, UsersHttp, ValidationLive } from "./Http.ts"
 import { SqlLive } from "./Sql.ts"
 import { Tokens } from "./Tokens.ts"
 import { Users } from "./Users.ts"
 
-const format = SchemaIssue.makeFormatterStandardSchemaV1()
-
-const ValidationLive = HttpApiMiddleware.layerSchemaErrorTransform(Validation, (error) => {
-  const issues = format(error.cause.issue).issues.map((issue) => ({
-    message: issue.message,
-    path: (issue.path ?? []).map(String),
-  }))
-  return Effect.fail(new BadRequest({ issues }))
-})
-
-// Look the token up, then run the endpoint with its user provided as CurrentUser.
-const AuthorizationLive = Layer.effect(
-  Authorization,
-  Effect.gen(function* () {
-    const tokens = yield* Tokens
-    return Authorization.of({
-      bearer: Effect.fn("Authorization.bearer")(function* (httpEffect, { credential }) {
-        const user = yield* tokens.verify(credential)
-        return yield* Effect.provideService(httpEffect, CurrentUser, user)
-      }),
-    })
-  }),
-).pipe(Layer.provide(Tokens.layer))
-
-// Yield Users once, when the layer builds, so it can be provided right here.
-const UsersLive = HttpApiBuilder.group(
-  Api,
-  "users",
-  Effect.fn(function* (handlers) {
-    const users = yield* Users
-    return handlers
-      .handle("get", ({ params }) => users.find(params.id))
-      .handle("create", ({ payload }) => users.create(payload))
-  }),
-).pipe(Layer.provide([Users.layer, ValidationLive, AuthorizationLive]))
+// The handlers, their middleware, and the Postgres services behind both.
+const UsersLive = UsersHttp.pipe(
+  Layer.provide([ValidationLive, AuthorizationLive]),
+  Layer.provide([Users.layer, Tokens.layer]),
+)
 
 const ApiRoutes = HttpApiBuilder.layer(Api, { openapiPath: "/openapi.json" }).pipe(
   Layer.provide(UsersLive),

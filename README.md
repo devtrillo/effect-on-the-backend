@@ -7,6 +7,7 @@ Each part of the series is a tag (`part-1`, `part-2`, …), so you can check out
 ```sh
 npm install
 npm run check
+npm test
 docker compose up -d --wait
 cp .env.example .env
 npm start
@@ -20,3 +21,5 @@ From part 11, `POST /users` needs a bearer token. `npm run -s token -- 1` prints
 TOKEN=$(npm run -s token -- 1)
 curl -X POST localhost:3000/users -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' -d '{"name":"Grace","email":"grace@example.com"}'
 ```
+
+From part 12, `npm test` runs the handlers in memory with `@effect/vitest`: no Postgres, no port.
