@@ -4,6 +4,7 @@ import { HttpRouter, HttpServerResponse } from "effect/http"
 import { HttpApiBuilder, HttpApiMiddleware, HttpApiScalar } from "effect/http-api"
 import { createServer } from "node:http"
 import { Api, BadRequest, Validation } from "./Api.ts"
+import { SqlLive } from "./Sql.ts"
 import { Users } from "./Users.ts"
 
 const format = SchemaIssue.makeFormatterStandardSchemaV1()
@@ -41,8 +42,12 @@ const LogConfig = Layer.effectDiscard(
   Effect.flatMap(Config.all({ port, databaseUrl }), (config) => Effect.log("Config", config)),
 )
 
-// Layer.provide builds LogConfig first, so the port opens only after the config check.
-const HttpLive = NodeHttpServer.layerConfig(createServer, { port }).pipe(Layer.provide(LogConfig))
+// Bottom up: the config check, then the database and its migrations, then the port.
+// provideMerge passes SqlClient on to everything inside HttpRouter.serve.
+const HttpLive = NodeHttpServer.layerConfig(createServer, { port }).pipe(
+  Layer.provideMerge(SqlLive),
+  Layer.provide(LogConfig),
+)
 
 const Server = HttpRouter.serve(Layer.mergeAll(Health, ApiRoutes, HttpApiScalar.layer(Api))).pipe(
   Layer.provide(HttpLive),

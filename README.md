@@ -7,8 +7,9 @@ Each part of the series is a tag (`part-1`, `part-2`, …), so you can check out
 ```sh
 npm install
 npm run check
+docker compose up -d --wait
 cp .env.example .env
 npm start
 ```
 
-Requires Node 24+. Node runs the `.ts` files directly (type stripping), so there is no build step: imports use `.ts` extensions and the code sticks to erasable TypeScript syntax. Pinned to `effect` 4.0.5.
+Requires Node 24+. Node runs the `.ts` files directly (type stripping), so there is no build step: imports use `.ts` extensions and the code sticks to erasable TypeScript syntax. Pinned to `effect` 4.0.5. From part 9 the server needs Postgres: `compose.yaml` runs one on port 5432, and migrations in `src/migrations` run at startup.

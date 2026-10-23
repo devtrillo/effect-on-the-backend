@@ -16,7 +16,7 @@ const tracer = Tracer.make({
 const run = <A, E>(effect: Effect.Effect<A, E, Users>) =>
   Effect.runPromiseExit(
     effect.pipe(
-      Effect.provide(Users.layer),
+      Effect.provide(Users.layerMemory),
       Effect.provideService(Tracer.Tracer, tracer),
     ),
   )

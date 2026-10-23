@@ -1,0 +1,14 @@
+# Local Postgres for the server. Matches DATABASE_URL in .env.example.
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: change-me
+      POSTGRES_DB: app
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "app", "-d", "app"]
+      interval: 1s
+      retries: 30

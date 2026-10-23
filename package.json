@@ -2,13 +2,16 @@
   "name": "effect-on-the-backend",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=24" },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "start": "node --env-file-if-exists=.env src/main.ts",
     "check": "tsc --noEmit"
   },
   "dependencies": {
     "@effect/platform-node": "4.0.5",
+    "@effect/sql-pg": "4.0.5",
     "effect": "4.0.5"
   },
   "devDependencies": {

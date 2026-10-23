@@ -20,7 +20,7 @@ const GetUser = HttpRouter.add(
 const NodeServer = NodeHttpServer.layer(createServer, { port: 3000 })
 
 // Forgot the Node server.
-const noServer = HttpRouter.serve(GetUser).pipe(Layer.provide(Users.layer))
+const noServer = HttpRouter.serve(GetUser).pipe(Layer.provide(Users.layerMemory))
 
 // Forgot the Users service.
 const noUsers = HttpRouter.serve(GetUser).pipe(Layer.provide(NodeServer))

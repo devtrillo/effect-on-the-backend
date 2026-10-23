@@ -5,7 +5,7 @@ import { Effect, Layer } from "effect"
 import { HttpRouter, HttpServerResponse } from "effect/http"
 import { Ids } from "../Ids.ts"
 import { UserId } from "../User.ts"
-import { Users } from "../Users.ts"
+import { makeMemory, Users } from "../Users.ts"
 
 const log: Array<string> = []
 const build = (layer: Layer.Layer<never, unknown, never>) =>
@@ -24,7 +24,7 @@ console.log("array           ", await build(App.pipe(Layer.provide([Listen, Chec
 // 2. One build shares a layer by reference. A function that returns a layer
 //    returns a new reference each call, so each call builds its own.
 const counted = () =>
-  Layer.effect(Users, Effect.andThen(Effect.sync(() => log.push("Users built")), Users.make)).pipe(
+  Layer.effect(Users, Effect.andThen(Effect.sync(() => log.push("Users built")), makeMemory)).pipe(
     Layer.provide(Ids.layer),
   )
 const once = counted()
@@ -32,7 +32,7 @@ console.log("same reference  ", await build(Layer.mergeAll(once, once)))
 console.log("two calls       ", await build(Layer.mergeAll(counted(), counted())))
 
 // 3. Effect.provide inside a handler builds the layer per request: a new map every time.
-const perRequest = <A, E>(effect: Effect.Effect<A, E, Users>) => effect.pipe(Effect.provide(Users.layer))
+const perRequest = <A, E>(effect: Effect.Effect<A, E, Users>) => effect.pipe(Effect.provide(Users.layerMemory))
 const Create = HttpRouter.add(
   "POST",
   "/users",
@@ -63,7 +63,7 @@ const nextAfterCreate = Effect.gen(function* () {
   yield* Users.use((users) => users.create({ name: "Grace", email: "grace@example.com" }))
   return yield* Ids.use((ids) => ids.next)
 })
-const merged = Layer.effect(Users, Users.make).pipe(Layer.provideMerge(Ids.layer))
+const merged = Layer.effect(Users, makeMemory).pipe(Layer.provideMerge(Ids.layer))
 console.log("provideMerge    ", await Effect.runPromise(nextAfterCreate.pipe(Effect.provide(merged))))
-console.log("provide twice   ", await Effect.runPromise(nextAfterCreate.pipe(Effect.provide(Users.layer), Effect.provide(Ids.layer))))
-console.log("fresh Ids       ", await Effect.runPromise(nextAfterCreate.pipe(Effect.provide(Users.layer), Effect.provide(Layer.fresh(Ids.layer)))))
+console.log("provide twice   ", await Effect.runPromise(nextAfterCreate.pipe(Effect.provide(Users.layerMemory), Effect.provide(Ids.layer))))
+console.log("fresh Ids       ", await Effect.runPromise(nextAfterCreate.pipe(Effect.provide(Users.layerMemory), Effect.provide(Layer.fresh(Ids.layer)))))
