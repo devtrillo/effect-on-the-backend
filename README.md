@@ -13,3 +13,10 @@ npm start
 ```
 
 Requires Node 24+. Node runs the `.ts` files directly (type stripping), so there is no build step: imports use `.ts` extensions and the code sticks to erasable TypeScript syntax. Pinned to `effect` 4.0.5. From part 9 the server needs Postgres: `compose.yaml` runs one on port 5432, and migrations in `src/migrations` run at startup.
+
+From part 11, `POST /users` needs a bearer token. `npm run -s token -- 1` prints a new one for user 1 (Ada):
+
+```sh
+TOKEN=$(npm run -s token -- 1)
+curl -X POST localhost:3000/users -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' -d '{"name":"Grace","email":"grace@example.com"}'
+```

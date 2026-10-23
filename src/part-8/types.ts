@@ -5,8 +5,17 @@ import { HttpRouter, HttpServerError } from "effect/http"
 import { HttpApiBuilder, HttpApiMiddleware } from "effect/http-api"
 import { createServer } from "node:http"
 import { Api, BadRequest, Validation } from "../Api.ts"
+import { Authorization, CurrentUser } from "../Auth.ts"
 import { Ids } from "../Ids.ts"
 import { makeMemory, Users } from "../Users.ts"
+
+// Part 11: creating a user needs a CurrentUser, and the API needs an Authorization layer.
+// Both are stubbed with Ada so the errors below stay about Users and Ids.
+const ada = { id: "1", name: "Ada" }
+const AuthorizationStub = Layer.succeed(
+  Authorization,
+  Authorization.of({ bearer: (httpEffect) => Effect.provideService(httpEffect, CurrentUser, ada) }),
+)
 
 // Users needs Ids now. Build it without Ids and the third type parameter says so.
 // @ts-expect-error Type 'Ids' is not assignable to type 'never'
@@ -17,7 +26,7 @@ export const NoIds: Layer.Layer<Users> = Layer.effect(Users, makeMemory)
 export const Hidden: Effect.Effect<string> = Effect.gen(function* () {
   yield* Users.use((users) => users.create({ name: "Grace", email: "grace@example.com" }))
   return yield* Ids.use((ids) => ids.next)
-}).pipe(Effect.provide(Users.layerMemory))
+}).pipe(Effect.provide(Users.layerMemory), Effect.provideService(CurrentUser, ada))
 
 // A handler that yields Users per request. Providing Users to the group doesn't
 // remove the requirement from the type: it stays a per-request requirement, and
@@ -29,7 +38,7 @@ const PerRequest = HttpApiBuilder.group(Api, "users", (handlers) =>
   handlers
     .handle("get", ({ params }) => Users.use((users) => users.find(params.id)))
     .handle("create", ({ payload }) => Users.use((users) => users.create(payload))),
-).pipe(Layer.provide([Users.layerMemory, ValidationLive]))
+).pipe(Layer.provide([Users.layerMemory, ValidationLive, AuthorizationStub]))
 
 // @ts-expect-error Type 'Users' is not assignable to type 'never'
 export const Served: Effect.Effect<never, HttpServerError.ServeError> = Layer.launch(

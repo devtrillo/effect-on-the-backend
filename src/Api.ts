@@ -6,6 +6,7 @@ import {
   HttpApiMiddleware,
   HttpApiSchema,
 } from "effect/http-api"
+import { Authorization } from "./Auth.ts"
 import { NewUser, User, UserParams } from "./User.ts"
 import { UserNotFound } from "./Users.ts"
 
@@ -27,10 +28,11 @@ export const UsersGroup = HttpApiGroup.make("users").add(
     success: User,
     error: UserNotFound,
   }),
+  // Creating a user needs a bearer token. get stays public.
   HttpApiEndpoint.post("create", "/users", {
     payload: NewUser,
     success: User.pipe(HttpApiSchema.status(201)),
-  }),
+  }).middleware(Authorization),
 )
 
 export const Api = HttpApi.make("api")

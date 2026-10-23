@@ -1,5 +1,6 @@
 import { Context, Effect, Layer, Schema } from "effect"
 import { SqlClient, SqlSchema } from "effect/sql"
+import { CurrentUser } from "./Auth.ts"
 import { Ids } from "./Ids.ts"
 import { NewUser, User } from "./User.ts"
 
@@ -43,8 +44,10 @@ const make = Effect.gen(function* () {
     ),
     create: Effect.fn("Users.create", { attributes: { "db.system": "postgresql" } })(
       function* (input: NewUser) {
+        // Yielding CurrentUser puts it in create's type: only a caller that has a user can run it.
+        const actor = yield* CurrentUser
         const user = yield* insert(input)
-        yield* sql`INSERT INTO user_events ${sql.insert({ user_id: user.id, type: "created" })}`
+        yield* sql`INSERT INTO user_events ${sql.insert({ user_id: user.id, type: "created", actor_id: actor.id })}`
         yield* Effect.annotateCurrentSpan("user.id", user.id)
         return user
       },

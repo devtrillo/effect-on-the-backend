@@ -3,9 +3,13 @@
 // and what Layer.provide hides.
 import { Effect, Layer } from "effect"
 import { HttpRouter, HttpServerResponse } from "effect/http"
+import { CurrentUser } from "../Auth.ts"
 import { Ids } from "../Ids.ts"
 import { UserId } from "../User.ts"
 import { makeMemory, Users } from "../Users.ts"
+
+// From part 11, creating a user needs a CurrentUser. Ada creates everyone here.
+const asAda = Effect.provideService(CurrentUser, { id: "1", name: "Ada" })
 
 const log: Array<string> = []
 const build = (layer: Layer.Layer<never, unknown, never>) =>
@@ -36,7 +40,7 @@ const perRequest = <A, E>(effect: Effect.Effect<A, E, Users>) => effect.pipe(Eff
 const Create = HttpRouter.add(
   "POST",
   "/users",
-  perRequest(Users.use((users) => users.create({ name: "Grace", email: "grace@example.com" }))).pipe(
+  perRequest(Users.use((users) => users.create({ name: "Grace", email: "grace@example.com" })).pipe(asAda)).pipe(
     Effect.map((user) => HttpServerResponse.text(user.id, { status: 201 })),
   ),
 )
@@ -62,7 +66,7 @@ await inner.dispose()
 const nextAfterCreate = Effect.gen(function* () {
   yield* Users.use((users) => users.create({ name: "Grace", email: "grace@example.com" }))
   return yield* Ids.use((ids) => ids.next)
-})
+}).pipe(asAda)
 const merged = Layer.effect(Users, makeMemory).pipe(Layer.provideMerge(Ids.layer))
 console.log("provideMerge    ", await Effect.runPromise(nextAfterCreate.pipe(Effect.provide(merged))))
 console.log("provide twice   ", await Effect.runPromise(nextAfterCreate.pipe(Effect.provide(Users.layerMemory), Effect.provide(Ids.layer))))
