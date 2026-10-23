@@ -1,18 +1,20 @@
 import { NodeHttpServer, NodeRuntime } from "@effect/platform-node"
 import { Config, Effect, Layer } from "effect"
-import { HttpRouter, HttpServerResponse } from "effect/http"
+import { FetchHttpClient, HttpRouter, HttpServerResponse } from "effect/http"
 import { HttpApiBuilder, HttpApiScalar } from "effect/http-api"
 import { createServer } from "node:http"
 import { Api } from "./Api.ts"
 import { AuthorizationLive, UsersHttp, ValidationLive } from "./Http.ts"
+import { Mailer } from "./Mailer.ts"
 import { SqlLive } from "./Sql.ts"
 import { Tokens } from "./Tokens.ts"
 import { Users } from "./Users.ts"
 
-// The handlers, their middleware, and the Postgres services behind both.
+// The handlers, their middleware, the Postgres services behind both, and the mail client.
 const UsersLive = UsersHttp.pipe(
   Layer.provide([ValidationLive, AuthorizationLive]),
-  Layer.provide([Users.layer, Tokens.layer]),
+  Layer.provide([Users.layer, Tokens.layer, Mailer.layer]),
+  Layer.provide(FetchHttpClient.layer),
 )
 
 const ApiRoutes = HttpApiBuilder.layer(Api, { openapiPath: "/openapi.json" }).pipe(

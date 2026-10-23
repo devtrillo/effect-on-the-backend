@@ -5,6 +5,7 @@ import { HttpApiBuilder, HttpApiMiddleware, HttpApiTest } from "effect/http-api"
 import { Api } from "../src/Api.ts"
 import { Authorization, Unauthorized } from "../src/Auth.ts"
 import { AuthorizationLive, UsersHttp, ValidationLive } from "../src/Http.ts"
+import { Mailer } from "../src/Mailer.ts"
 import { Tokens } from "../src/Tokens.ts"
 import { UserId } from "../src/User.ts"
 import { Users } from "../src/Users.ts"
@@ -21,11 +22,14 @@ const TokensTest = Layer.succeed(
   }),
 )
 
-// The real handlers and middleware, with in-memory Users and fake Tokens.
+// Every welcome mail "sends" at once. test/Mailer.test.ts covers the real one.
+const MailerTest = Layer.succeed(Mailer, Mailer.of({ welcome: () => Effect.void }))
+
+// The real handlers and middleware, with in-memory Users and fake Tokens and Mailer.
 // provideMerge, not provide: HttpApiTest.groups asks for the middleware services in its type.
 const UsersTest = UsersHttp.pipe(
   Layer.provideMerge([ValidationLive, AuthorizationLive]),
-  Layer.provide([Users.layerMemory, TokensTest]),
+  Layer.provide([Users.layerMemory, TokensTest, MailerTest]),
 )
 
 // A typed client wired straight to the handlers. No server, no port.

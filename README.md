@@ -23,3 +23,5 @@ curl -X POST localhost:3000/users -H "authorization: Bearer $TOKEN" -H 'content-
 ```
 
 From part 12, `npm test` runs the handlers in memory with `@effect/vitest`: no Postgres, no port.
+
+From part 13, `POST /users` sends a welcome mail through `src/Mailer.ts`: a timeout per attempt, retries with backoff, and 5 seconds for the whole send. `npm run mail` runs a flaky fake mail service on port 3001, the default `MAIL_URL`. `MAIL_FAILS` picks how it fails (`503,hang` by default; also try `422`, `429`, `slow`). If the mail never gets through, the user is still created and the server logs a warning.

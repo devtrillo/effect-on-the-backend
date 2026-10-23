@@ -8,6 +8,7 @@
   "scripts": {
     "start": "node --env-file-if-exists=.env src/main.ts",
     "token": "node --env-file-if-exists=.env src/token.ts",
+    "mail": "node src/part-13/fake-mail.ts",
     "check": "tsc --noEmit",
     "test": "vitest run"
   },

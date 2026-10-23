@@ -2,6 +2,7 @@ import { Effect, Layer, SchemaIssue } from "effect"
 import { HttpApiBuilder, HttpApiMiddleware } from "effect/http-api"
 import { Api, BadRequest, Validation } from "./Api.ts"
 import { Authorization, CurrentUser } from "./Auth.ts"
+import { Mailer } from "./Mailer.ts"
 import { Tokens } from "./Tokens.ts"
 import { Users } from "./Users.ts"
 
@@ -32,14 +33,25 @@ export const AuthorizationLive = Layer.effect(
   }),
 )
 
-// The handlers with nothing provided. They need Users, and the two middleware layers above.
+// The handlers with nothing provided. They need Users, Mailer, and the two middleware layers above.
 export const UsersHttp = HttpApiBuilder.group(
   Api,
   "users",
   Effect.fn(function* (handlers) {
     const users = yield* Users
+    const mailer = yield* Mailer
     return handlers
       .handle("get", ({ params }) => users.find(params.id))
-      .handle("create", ({ payload }) => users.create(payload))
+      .handle("create", ({ payload }) =>
+        users.create(payload).pipe(
+          // After the commit, not inside the transaction. The user exists either way,
+          // so a mail that never arrives is a warning, not a failed request.
+          Effect.tap((user) =>
+            mailer.welcome({ id: user.id, name: user.name, email: payload.email }).pipe(
+              Effect.catchTag("MailError", (error) => Effect.logWarning("welcome mail not sent", error.message)),
+            ),
+          ),
+        ),
+      )
   }),
 )
