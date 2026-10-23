@@ -44,9 +44,12 @@ const make = Effect.gen(function* () {
     create: Effect.fn("Users.create", { attributes: { "db.system": "postgresql" } })(
       function* (input: NewUser) {
         const user = yield* insert(input)
+        yield* sql`INSERT INTO user_events ${sql.insert({ user_id: user.id, type: "created" })}`
         yield* Effect.annotateCurrentSpan("user.id", user.id)
         return user
       },
+      // Both INSERTs run on one connection between BEGIN and COMMIT. Any failure, or an interruption, rolls back.
+      sql.withTransaction,
       Effect.catchTags({ SqlError: Effect.die, SchemaError: Effect.die, NoSuchElementError: Effect.die }),
     ),
   }
